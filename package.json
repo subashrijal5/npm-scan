@@ -7,6 +7,7 @@
   "bin": {
     "npm-scan": "./bin/npm-scan.js"
   },
+  "files": ["dist", "bin"],
   "repository": {
     "type": "git",
     "url": "git+https://github.com/ankur700/npm-scan.git"
@@ -18,11 +19,6 @@
   "engines": {
     "node": ">=18"
   },
-  "files": [
-    "dist",
-    "bin"
-  ],
-
   "scripts": {
     "build": "bun build ./src/index.ts --outdir ./dist --target node",
     "scan": "node ./bin/npm-scan.js",
