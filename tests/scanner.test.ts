@@ -28,7 +28,7 @@ describe('Scanner', () => {
       const packageJson = {
         name: 'sample-app',
         dependencies: { chalk: '^5.0.0' },
-        devDependencies: { typescript: '^5.0.0' }
+        devDependencies: { typescript: '^5.0.0' },
       };
       const pkgPath = path.join(tmpDir, 'package.json');
       fs.writeFileSync(pkgPath, JSON.stringify(packageJson, null, 2));
@@ -36,7 +36,7 @@ describe('Scanner', () => {
       const deps = scanner.getDependencies(pkgPath);
       expect(deps).toEqual({
         chalk: '^5.0.0',
-        typescript: '^5.0.0'
+        typescript: '^5.0.0',
       });
     });
 
@@ -51,7 +51,7 @@ describe('Scanner', () => {
     test('reads lockfile packages if lockfile exists', () => {
       const packageJson = {
         name: 'sample-app',
-        dependencies: { chalk: '^5.0.0' }
+        dependencies: { chalk: '^5.0.0' },
       };
       fs.writeFileSync(path.join(tmpDir, 'package.json'), JSON.stringify(packageJson));
 
@@ -60,22 +60,22 @@ describe('Scanner', () => {
         packages: {
           '': { name: 'sample-app' },
           'node_modules/chalk': { version: '5.3.0' },
-          'node_modules/ansi-styles': { version: '6.2.1' }
-        }
+          'node_modules/ansi-styles': { version: '6.2.1' },
+        },
       };
       fs.writeFileSync(path.join(tmpDir, 'package-lock.json'), JSON.stringify(lockfile));
 
       const installed = scanner.getAllInstalledPackages(tmpDir);
       expect(installed).toEqual({
         chalk: '5.3.0',
-        'ansi-styles': '6.2.1'
+        'ansi-styles': '6.2.1',
       });
     });
 
     test('falls back to package.json if lockfile is missing', () => {
       const packageJson = {
         name: 'sample-app',
-        dependencies: { chalk: '5.3.0' }
+        dependencies: { chalk: '5.3.0' },
       };
       fs.writeFileSync(path.join(tmpDir, 'package.json'), JSON.stringify(packageJson));
 
@@ -88,7 +88,7 @@ describe('Scanner', () => {
     test('correctly identifies direct and transitive dependencies', () => {
       const packageJson = {
         name: 'sample-app',
-        dependencies: { chalk: '5.3.0' }
+        dependencies: { chalk: '5.3.0' },
       };
       fs.writeFileSync(path.join(tmpDir, 'package.json'), JSON.stringify(packageJson));
 
@@ -97,15 +97,15 @@ describe('Scanner', () => {
         packages: {
           '': { name: 'sample-app' },
           'node_modules/chalk': { version: '5.3.0' },
-          'node_modules/ansi-styles': { version: '6.2.1' }
-        }
+          'node_modules/ansi-styles': { version: '6.2.1' },
+        },
       };
       fs.writeFileSync(path.join(tmpDir, 'package-lock.json'), JSON.stringify(lockfile));
 
       const types = scanner.getDependencyTypes(path.join(tmpDir, 'package.json'));
       expect(types).toEqual({
         chalk: 'direct',
-        'ansi-styles': 'transitive'
+        'ansi-styles': 'transitive',
       });
     });
   });
@@ -120,7 +120,7 @@ describe('Scanner', () => {
           publishedAt: '2023-01-01',
           isDefault: true,
           vulnerabilities: [],
-          vulnerabilityCount: 0
+          vulnerabilityCount: 0,
         },
         {
           package: 'vuln-pkg',
@@ -129,10 +129,16 @@ describe('Scanner', () => {
           publishedAt: '2022-05-05',
           isDefault: true,
           vulnerabilities: [
-            { id: 'GHSA-1234', title: 'Critical flaw', severity: 'high', cvss: 8.5, summary: 'Bad bug' }
+            {
+              id: 'GHSA-1234',
+              title: 'Critical flaw',
+              severity: 'high',
+              cvss: 8.5,
+              summary: 'Bad bug',
+            },
           ],
-          vulnerabilityCount: 1
-        }
+          vulnerabilityCount: 1,
+        },
       ];
 
       const filtered = scanner.filterReportResults(sampleResults);
@@ -151,8 +157,8 @@ describe('Scanner', () => {
           publishedAt: '2023-01-01',
           isDefault: true,
           vulnerabilities: [],
-          vulnerabilityCount: 0
-        }
+          vulnerabilityCount: 0,
+        },
       ];
 
       const outputFile = path.join(tmpDir, 'test-report.json');
@@ -174,7 +180,7 @@ describe('Scanner', () => {
       global.fetch = mock(async (..._args: Parameters<typeof fetch>) => {
         return {
           ok: true,
-          json: async () => ({ publishedAt: '2023-06-15T00:00:00Z', isDefault: true })
+          json: async () => ({ publishedAt: '2023-06-15T00:00:00Z', isDefault: true }),
         } as Response;
       }) as unknown as typeof fetch;
 
@@ -188,7 +194,7 @@ describe('Scanner', () => {
         if (urlStr.includes('/versions/')) {
           return {
             ok: true,
-            json: async () => ({ advisoryKeys: [{ id: 'GHSA-TEST-1234' }] })
+            json: async () => ({ advisoryKeys: [{ id: 'GHSA-TEST-1234' }] }),
           } as Response;
         } else if (urlStr.includes('/advisories/')) {
           return {
@@ -197,8 +203,8 @@ describe('Scanner', () => {
               title: 'Test Vulnerability',
               severity: 'high',
               cvss3Score: 7.5,
-              overview: 'Overview details'
-            })
+              overview: 'Overview details',
+            }),
           } as Response;
         }
         return { ok: false } as Response;
@@ -211,7 +217,7 @@ describe('Scanner', () => {
         title: 'Test Vulnerability',
         severity: 'high',
         cvss: 7.5,
-        summary: 'Overview details'
+        summary: 'Overview details',
       });
     });
 
@@ -219,7 +225,7 @@ describe('Scanner', () => {
       global.fetch = mock(async (..._args: Parameters<typeof fetch>) => {
         return {
           ok: true,
-          json: async () => ({ versions: ['1.0.0', '2.0.0', '3.0.0'] })
+          json: async () => ({ versions: ['1.0.0', '2.0.0', '3.0.0'] }),
         } as Response;
       }) as unknown as typeof fetch;
 

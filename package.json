@@ -7,7 +7,6 @@
   "bin": {
     "npm-scan": "./bin/npm-scan.js"
   },
-  "files": ["dist", "bin"],
   "repository": {
     "type": "git",
     "url": "git+https://github.com/ankur700/npm-scan.git"
@@ -19,14 +18,23 @@
   "engines": {
     "node": ">=18"
   },
+  "files": [
+    "dist",
+    "bin"
+  ],
+
   "scripts": {
-      "build": "bun build ./src/index.ts --outdir ./dist --target node",
-      "scan": "node ./bin/npm-scan.js",
-      "test": "bun test",
-      "prepare": "bun run build",
-      "prepublishOnly": "bun run build"
+    "build": "bun build ./src/index.ts --outdir ./dist --target node",
+    "scan": "node ./bin/npm-scan.js",
+    "test": "bun test",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "prepare": "bun run build",
+    "prepublishOnly": "bun run build"
   },
-  "keywords" : [
+  "keywords": [
     "npm",
     "scan",
     "dependencies",
@@ -44,11 +52,18 @@
     "execa": "^9.6.1"
   },
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
     "@types/bun": "latest",
+    "@types/execa": "^2.0.2",
     "@types/figlet": "^1.5.2",
     "@types/inquirer": "^9.0.0",
     "@types/listr": "^0.14.1",
-    "@types/execa": "^2.0.2"
+    "eslint": "^10.8.0",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-security": "^4.0.1",
+    "globals": "^17.7.0",
+    "prettier": "^3.9.6",
+    "typescript-eslint": "^8.65.0"
   },
   "peerDependencies": {
     "typescript": "^5"
