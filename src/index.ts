@@ -11,7 +11,7 @@ import type {
   Advisory,
   DependencyResult,
   ScanReport,
-  ScanCacheEntry
+  ScanCacheEntry,
 } from './types';
 import {
   renderBanner,
@@ -24,7 +24,7 @@ import {
   parseBunLockfile,
   parseCliArgs,
   showHelp,
-  resolveTarget
+  resolveTarget,
 } from './utils';
 
 class Scanner {
@@ -48,7 +48,7 @@ class Scanner {
       npm: 'package-lock.json',
       yarn: 'yarn.lock',
       pnpm: 'pnpm-lock.yaml',
-      bun: 'bun.lockb'
+      bun: 'bun.lockb',
     };
 
     const packageManager = detectPackageManager(projectPath);
@@ -102,13 +102,17 @@ class Scanner {
     this.scanCache = {};
   }
 
-  private getCachedResults(cacheKey: string, fingerprint: string, cachePath: string): DependencyResult[] | null {
+  private getCachedResults(
+    cacheKey: string,
+    fingerprint: string,
+    cachePath: string,
+  ): DependencyResult[] | null {
     if (this.scanCache[cacheKey]) {
       return this.scanCache[cacheKey];
     }
 
     const entries = this.loadCache(cachePath);
-    const entry = entries.find(e => e.cacheKey === cacheKey && e.fingerprint === fingerprint);
+    const entry = entries.find((e) => e.cacheKey === cacheKey && e.fingerprint === fingerprint);
     if (!entry) {
       return null;
     }
@@ -123,16 +127,16 @@ class Scanner {
     results: DependencyResult[],
     cachePath: string,
     packageJsonPath: string,
-    includeTransitive: boolean
+    includeTransitive: boolean,
   ): void {
-    const entries = this.loadCache(cachePath).filter(e => e.cacheKey !== cacheKey);
+    const entries = this.loadCache(cachePath).filter((e) => e.cacheKey !== cacheKey);
     entries.push({
       cacheKey,
       fingerprint,
       results,
       packageJsonPath,
       includeTransitive,
-      updatedAt: new Date().toISOString()
+      updatedAt: new Date().toISOString(),
     });
 
     this.saveCache(cachePath, entries);
@@ -144,10 +148,13 @@ class Scanner {
       const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
       return {
         ...packageJson.dependencies,
-        ...packageJson.devDependencies
+        ...packageJson.devDependencies,
       };
     } catch (error) {
-      throw new Error(`Failed to read package.json: ${error instanceof Error ? error.message : String(error)}`);
+      throw new Error(
+        `Failed to read package.json: ${error instanceof Error ? error.message : String(error)}`,
+        { cause: error },
+      );
     }
   }
 
@@ -188,24 +195,30 @@ class Scanner {
       }
 
       if (Object.keys(allPackages).length === 0) {
-        console.warn(`Warning: Could not parse ${packageManager} lock file. Falling back to package.json dependencies only`);
+        console.warn(
+          `Warning: Could not parse ${packageManager} lock file. Falling back to package.json dependencies only`,
+        );
         return this.getDependencies(path.join(baseDir, 'package.json'));
       }
 
       return allPackages;
     } catch (error) {
-      console.warn(`Warning: Could not read lock file: ${error instanceof Error ? error.message : String(error)}`);
+      console.warn(
+        `Warning: Could not read lock file: ${error instanceof Error ? error.message : String(error)}`,
+      );
       console.warn('Falling back to package.json dependencies only');
       return this.getDependencies(path.join(baseDir, 'package.json'));
     }
   }
 
-  getDependencyTypes(packageJsonPath: string = './package.json'): { [key: string]: 'direct' | 'transitive' } {
+  getDependencyTypes(packageJsonPath: string = './package.json'): {
+    [key: string]: 'direct' | 'transitive';
+  } {
     try {
       const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
       const directDeps = {
         ...packageJson.dependencies,
-        ...packageJson.devDependencies
+        ...packageJson.devDependencies,
       };
 
       const projectPath = path.dirname(packageJsonPath);
@@ -218,7 +231,10 @@ class Scanner {
 
       return dependencyTypes;
     } catch (error) {
-      throw new Error(`Failed to analyze dependency types: ${error instanceof Error ? error.message : String(error)}`);
+      throw new Error(
+        `Failed to analyze dependency types: ${error instanceof Error ? error.message : String(error)}`,
+        { cause: error },
+      );
     }
   }
 
@@ -231,16 +247,17 @@ class Scanner {
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
-      return await response.json() as VersionInfo;
+      return (await response.json()) as VersionInfo;
     } catch (error) {
-      console.error(`Failed to get version info for ${packageName}@${version}:`, error instanceof Error ? error.message : String(error));
+      console.error(
+        `Failed to get version info for ${packageName}@${version}:`,
+        error instanceof Error ? error.message : String(error),
+      );
       return null;
     }
   }
 
   async getVulnerabilities(packageName: string, version: string): Promise<Advisory[]> {
-    const cleanVersion = version.replace(/^[\^~]/, '');
-
     try {
       const versionInfo = await this.getVersionInfo(packageName, version);
       const advisoryKeys = (versionInfo as any)?.advisoryKeys as Array<{ id: string }> | undefined;
@@ -259,28 +276,29 @@ class Scanner {
           continue;
         }
 
-        const advisoryData = await response.json() as any;
+        const advisoryData = (await response.json()) as any;
         const advisoryInfo = advisoryData?.advisoryKey ? advisoryData : advisoryData;
 
         const cvssScore = advisoryInfo.cvss3Score ?? 0;
-        const normalizedSeverity = advisoryInfo.severity
-          || (cvssScore >= 7 ? 'high'
-          : cvssScore >= 4 ? 'medium'
-          : cvssScore > 0 ? 'low'
-          : 'unknown');
+        const normalizedSeverity =
+          advisoryInfo.severity ||
+          (cvssScore >= 7 ? 'high' : cvssScore >= 4 ? 'medium' : cvssScore > 0 ? 'low' : 'unknown');
 
         advisories.push({
           id: advisory.id,
           title: advisoryInfo.title || 'Unknown advisory',
           severity: normalizedSeverity,
           cvss: cvssScore,
-          summary: advisoryInfo.overview || advisoryInfo.summary || advisoryInfo.url || ''
+          summary: advisoryInfo.overview || advisoryInfo.summary || advisoryInfo.url || '',
         });
       }
 
       return advisories;
     } catch (error) {
-      console.error(`Failed to get vulnerabilities for ${packageName}@${version}:`, error instanceof Error ? error.message : String(error));
+      console.error(
+        `Failed to get vulnerabilities for ${packageName}@${version}:`,
+        error instanceof Error ? error.message : String(error),
+      );
       return [];
     }
   }
@@ -293,10 +311,13 @@ class Scanner {
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
-      const data = await response.json() as { versions?: string[] };
+      const data = (await response.json()) as { versions?: string[] };
       return data.versions || [];
     } catch (error) {
-      console.error(`Failed to get versions for ${packageName}:`, error instanceof Error ? error.message : String(error));
+      console.error(
+        `Failed to get versions for ${packageName}:`,
+        error instanceof Error ? error.message : String(error),
+      );
       return [];
     }
   }
@@ -304,7 +325,7 @@ class Scanner {
   async scanDependencies(
     packageJsonPath: string = './package.json',
     includeTransitive: boolean = true,
-    options?: { cacheFilePath?: string; clearCache?: boolean }
+    options?: { cacheFilePath?: string; clearCache?: boolean },
   ): Promise<DependencyResult[]> {
     const projectPath = path.dirname(packageJsonPath);
     const cachePath = options?.cacheFilePath
@@ -340,35 +361,44 @@ class Scanner {
         dependencyType: (dependencyTypes[packageName] as 'direct' | 'transitive') || 'direct',
         publishedAt: versionInfo?.publishedAt || 'Unknown',
         isDefault: versionInfo?.isDefault || false,
-        vulnerabilities: vulnerabilities.map(vuln => ({
+        vulnerabilities: vulnerabilities.map((vuln) => ({
           id: vuln.id,
           title: vuln.title,
           severity: vuln.severity,
           cvss: vuln.cvss,
-          summary: vuln.summary
+          summary: vuln.summary,
         })),
-        vulnerabilityCount: vulnerabilities.length
+        vulnerabilityCount: vulnerabilities.length,
       };
 
       results.push(result);
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise((resolve) => setTimeout(resolve, 100));
     }
 
-    this.setCacheEntry(cacheKey, fingerprint, results, cachePath, packageJsonPath, includeTransitive);
+    this.setCacheEntry(
+      cacheKey,
+      fingerprint,
+      results,
+      cachePath,
+      packageJsonPath,
+      includeTransitive,
+    );
     return results;
   }
 
   public filterReportResults(results: DependencyResult[]): DependencyResult[] {
-    return results.filter(r => r.vulnerabilityCount > 0);
+    return results.filter((r) => r.vulnerabilityCount > 0);
   }
 
   generateReport(results: DependencyResult[], options?: { onlyVulnerable?: boolean }): void {
     const reportResults = options?.onlyVulnerable ? this.filterReportResults(results) : results;
-    const vulnerablePackages = reportResults.filter(r => r.vulnerabilityCount > 0);
-    const directPackages = reportResults.filter(r => r.dependencyType === 'direct');
-    const transitivePackages = reportResults.filter(r => r.dependencyType === 'transitive');
-    const vulnerableDirect = vulnerablePackages.filter(r => r.dependencyType === 'direct');
-    const vulnerableTransitive = vulnerablePackages.filter(r => r.dependencyType === 'transitive');
+    const vulnerablePackages = reportResults.filter((r) => r.vulnerabilityCount > 0);
+    const directPackages = reportResults.filter((r) => r.dependencyType === 'direct');
+    const transitivePackages = reportResults.filter((r) => r.dependencyType === 'transitive');
+    const vulnerableDirect = vulnerablePackages.filter((r) => r.dependencyType === 'direct');
+    const vulnerableTransitive = vulnerablePackages.filter(
+      (r) => r.dependencyType === 'transitive',
+    );
 
     console.log(chalk.bold(chalk.cyan('\n🔎 Dependency Scan Report')));
     console.log(chalk.dim('─'.repeat(60)));
@@ -379,17 +409,18 @@ class Scanner {
 
     if (vulnerablePackages.length > 0) {
       console.log(chalk.redBright('\n⚠️  Vulnerable packages'));
-      vulnerablePackages.forEach(pkg => {
+      vulnerablePackages.forEach((pkg) => {
         const depType = pkg.dependencyType === 'direct' ? '🎯 Direct' : '🔗 Transitive';
         console.log(chalk.cyan(`\n📦 ${pkg.package}@${pkg.currentVersion} (${depType})`));
         console.log(chalk.gray(`   • Published: ${pkg.publishedAt}`));
         console.log(chalk.gray(`   • Findings: ${pkg.vulnerabilityCount}`));
 
-        pkg.vulnerabilities.forEach(vuln => {
+        pkg.vulnerabilities.forEach((vuln) => {
           console.log(chalk.red(`   - ${vuln.title}`));
           console.log(chalk.gray(`     Severity: ${vuln.severity || 'Unknown severity'}`));
           if (vuln.summary) {
-            const summary = vuln.summary.length > 120 ? `${vuln.summary.substring(0, 117)}...` : vuln.summary;
+            const summary =
+              vuln.summary.length > 120 ? `${vuln.summary.substring(0, 117)}...` : vuln.summary;
             console.log(chalk.gray(`     Details: ${summary}`));
           }
         });
@@ -400,19 +431,25 @@ class Scanner {
 
     if (transitivePackages.length > 0) {
       console.log(chalk.magenta('\n📊 Vulnerability breakdown'));
-      console.log(`   • Direct dependencies affected: ${vulnerableDirect.length}/${directPackages.length}`);
-      console.log(`   • Transitive dependencies affected: ${vulnerableTransitive.length}/${transitivePackages.length}`);
+      console.log(
+        `   • Direct dependencies affected: ${vulnerableDirect.length}/${directPackages.length}`,
+      );
+      console.log(
+        `   • Transitive dependencies affected: ${vulnerableTransitive.length}/${transitivePackages.length}`,
+      );
     }
 
     const sortedByDate = reportResults
-      .filter(r => r.publishedAt !== 'Unknown')
+      .filter((r) => r.publishedAt !== 'Unknown')
       .sort((a, b) => new Date(a.publishedAt).getTime() - new Date(b.publishedAt).getTime());
 
     if (sortedByDate.length > 0) {
       console.log(chalk.blue('\n📅 Oldest published dependencies'));
-      sortedByDate.slice(0, 5).forEach(pkg => {
+      sortedByDate.slice(0, 5).forEach((pkg) => {
         const depType = pkg.dependencyType === 'direct' ? '🎯' : '🔗';
-        console.log(`   ${depType} ${pkg.package}@${pkg.currentVersion} — published ${pkg.publishedAt}`);
+        console.log(
+          `   ${depType} ${pkg.package}@${pkg.currentVersion} — published ${pkg.publishedAt}`,
+        );
       });
     }
 
@@ -420,9 +457,9 @@ class Scanner {
   }
 
   saveResults(results: DependencyResult[], filename: string = 'dependency-scan.json'): void {
-    const vulnerablePackages = results.filter(r => r.vulnerabilityCount > 0);
-    const directPackages = results.filter(r => r.dependencyType === 'direct');
-    const transitivePackages = results.filter(r => r.dependencyType === 'transitive');
+    const vulnerablePackages = results.filter((r) => r.vulnerabilityCount > 0);
+    const directPackages = results.filter((r) => r.dependencyType === 'direct');
+    const transitivePackages = results.filter((r) => r.dependencyType === 'transitive');
 
     const report: ScanReport = {
       scanDate: new Date().toISOString(),
@@ -431,8 +468,9 @@ class Scanner {
         directDependencies: directPackages.length,
         transitiveDependencies: transitivePackages.length,
         vulnerablePackages: vulnerablePackages.length,
-        vulnerableDirect: vulnerablePackages.filter(r => r.dependencyType === 'direct').length,
-        vulnerableTransitive: vulnerablePackages.filter(r => r.dependencyType === 'transitive').length
+        vulnerableDirect: vulnerablePackages.filter((r) => r.dependencyType === 'direct').length,
+        vulnerableTransitive: vulnerablePackages.filter((r) => r.dependencyType === 'transitive')
+          .length,
       },
       results,
     };
@@ -456,7 +494,7 @@ async function main(argv: string[] = process.argv.slice(2)): Promise<void> {
   try {
     const scanOptions = {
       cacheFilePath: typeof flags['cache-file'] === 'string' ? flags['cache-file'] : undefined,
-      clearCache: Boolean(flags['clear-cache'])
+      clearCache: Boolean(flags['clear-cache']),
     };
 
     const targetInput = typeof flags.url === 'string' ? flags.url : undefined;
@@ -474,9 +512,13 @@ async function main(argv: string[] = process.argv.slice(2)): Promise<void> {
             {
               title: `Scanning dependencies for ${targetCtx.projectPath}`,
               task: async () => {
-                results = await scanner.scanDependencies(packageJsonPath, includeTransitive, scanOptions);
-              }
-            }
+                results = await scanner.scanDependencies(
+                  packageJsonPath,
+                  includeTransitive,
+                  scanOptions,
+                );
+              },
+            },
           ]).run();
 
           scanner.generateReport(results);
@@ -500,15 +542,16 @@ async function main(argv: string[] = process.argv.slice(2)): Promise<void> {
               title: `Scanning all installed packages for ${targetCtx.projectPath}`,
               task: async () => {
                 results = await scanner.scanDependencies(packageJsonPath, true, scanOptions);
-              }
-            }
+              },
+            },
           ]).run();
 
           console.log(chalk.blue(`Total installed packages: ${results.length}`));
-          results.forEach(pkg => console.log(chalk.gray(`${pkg.package}@${pkg.currentVersion}`)));
+          results.forEach((pkg) => console.log(chalk.gray(`${pkg.package}@${pkg.currentVersion}`)));
 
           if (flags.save) {
-            const filename = typeof flags.save === 'string' ? flags.save : 'all-installed-report.json';
+            const filename =
+              typeof flags.save === 'string' ? flags.save : 'all-installed-report.json';
             if (await confirmSave(filename)) {
               scanner.saveResults(results, filename);
             } else {
@@ -527,14 +570,14 @@ async function main(argv: string[] = process.argv.slice(2)): Promise<void> {
               title: `Scanning dependencies for report (${targetCtx.projectPath})`,
               task: async () => {
                 results = await scanner.scanDependencies(packageJsonPath, true, scanOptions);
-              }
+              },
             },
             {
               title: 'Preparing vulnerable report',
               task: () => {
                 filteredResults = scanner.filterReportResults(results);
-              }
-            }
+              },
+            },
           ]).run();
 
           scanner.generateReport(filteredResults, { onlyVulnerable: true });
@@ -563,11 +606,13 @@ async function main(argv: string[] = process.argv.slice(2)): Promise<void> {
       targetCtx.cleanup();
     }
   } catch (error) {
-    console.error(chalk.red('Command failed:'), error instanceof Error ? error.message : String(error));
+    console.error(
+      chalk.red('Command failed:'),
+      error instanceof Error ? error.message : String(error),
+    );
     process.exit(1);
   }
 }
-
 
 export { main };
 export default Scanner;
