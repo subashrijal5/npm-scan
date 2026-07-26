@@ -34,13 +34,21 @@ describe('CLI Integration', () => {
     expect(result.stdout).toContain('Usage: npm-scan');
   });
 
-  test('scans specified local target directory via --url option', async () => {
-    const projectDir = path.resolve(__dirname, '..');
-    const result = await execa('node', [binPath, 'scan', '--url', projectDir, '--direct-only']);
+  // This scans npm-scan's own package.json and does a live network lookup
+  // per dependency, so the default 5s test timeout is too tight now that
+  // the project has more (dev)dependencies (eslint/prettier tooling, etc).
+  const SCAN_TEST_TIMEOUT_MS = 20000;
 
-    expect(result.exitCode).toBe(0);
-    expect(result.stdout).toContain('Scanning dependencies');
-    expect(result.stdout).toContain('Dependency Scan Report');
-  });
+  test(
+    'scans specified local target directory via --url option',
+    async () => {
+      const projectDir = path.resolve(__dirname, '..');
+      const result = await execa('node', [binPath, 'scan', '--url', projectDir, '--direct-only']);
+
+      expect(result.exitCode).toBe(0);
+      expect(result.stdout).toContain('Scanning dependencies');
+      expect(result.stdout).toContain('Dependency Scan Report');
+    },
+    SCAN_TEST_TIMEOUT_MS,
+  );
 });
-
