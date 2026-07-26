@@ -11,7 +11,7 @@ import {
   parseCliArgs,
   isGithubUrl,
   normalizeGithubUrl,
-  resolveTarget,
+  resolveTarget
 } from '../src/utils';
 
 describe('utils', () => {
@@ -41,12 +41,8 @@ describe('utils', () => {
 
     test('normalizes GitHub URLs', () => {
       expect(normalizeGithubUrl('github.com/owner/repo')).toBe('https://github.com/owner/repo');
-      expect(normalizeGithubUrl('https://github.com/owner/repo')).toBe(
-        'https://github.com/owner/repo',
-      );
-      expect(normalizeGithubUrl('git@github.com:owner/repo.git')).toBe(
-        'git@github.com:owner/repo.git',
-      );
+      expect(normalizeGithubUrl('https://github.com/owner/repo')).toBe('https://github.com/owner/repo');
+      expect(normalizeGithubUrl('git@github.com:owner/repo.git')).toBe('git@github.com:owner/repo.git');
     });
   });
 
@@ -123,8 +119,8 @@ describe('utils', () => {
         packages: {
           '': { name: 'test-project', version: '1.0.0' },
           'node_modules/chalk': { version: '5.3.0' },
-          'node_modules/@types/node': { version: '20.0.0' },
-        },
+          'node_modules/@types/node': { version: '20.0.0' }
+        }
       });
       const lockfilePath = path.join(tmpDir, 'package-lock.json');
       fs.writeFileSync(lockfilePath, lockfileContent);
@@ -132,7 +128,7 @@ describe('utils', () => {
       const result = parseNpmLockfile(lockfilePath);
       expect(result).toEqual({
         chalk: '5.3.0',
-        '@types/node': '20.0.0',
+        '@types/node': '20.0.0'
       });
     });
 
@@ -143,8 +139,8 @@ describe('utils', () => {
         lockfileVersion: 1,
         dependencies: {
           express: { version: '4.18.2' },
-          lodash: { version: '4.17.21' },
-        },
+          lodash: { version: '4.17.21' }
+        }
       });
       const lockfilePath = path.join(tmpDir, 'package-lock.json');
       fs.writeFileSync(lockfilePath, lockfileContent);
@@ -152,7 +148,7 @@ describe('utils', () => {
       const result = parseNpmLockfile(lockfilePath);
       expect(result).toEqual({
         express: '4.18.2',
-        lodash: '4.17.21',
+        lodash: '4.17.21'
       });
     });
   });
@@ -173,7 +169,7 @@ packages:
       const result = parsePnpmLockfile(lockfilePath);
       expect(result).toEqual({
         chalk: '5.3.0',
-        lodash: '4.17.21',
+        lodash: '4.17.21'
       });
     });
 
@@ -204,7 +200,7 @@ packages:
       const result = parseYarnLockfile(lockfilePath);
       expect(result).toEqual({
         chalk: '5.3.0',
-        lodash: '4.17.21',
+        lodash: '4.17.21'
       });
     });
 
@@ -296,3 +292,4 @@ packages:
     });
   });
 });
+
