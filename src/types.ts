@@ -3,7 +3,13 @@ export interface DependenciesMap {
 }
 
 export interface PackageInfo {
-  version: string;
+  version?: string;
+  [key: string]: unknown;
+}
+
+export interface LegacyLockDependency {
+  version?: string;
+  dependencies?: Record<string, LegacyLockDependency>;
   [key: string]: unknown;
 }
 
@@ -11,6 +17,7 @@ export interface PackageLockData {
   packages?: {
     [key: string]: PackageInfo;
   };
+  dependencies?: Record<string, LegacyLockDependency>;
 }
 
 export interface PnpmLockData {
@@ -30,9 +37,14 @@ export interface YarnLockEntry {
 
 export type PackageManager = 'npm' | 'yarn' | 'pnpm' | 'bun';
 
+export interface AdvisoryKeyRef {
+  id: string;
+}
+
 export interface VersionInfo {
   publishedAt?: string;
   isDefault?: boolean;
+  advisoryKeys?: AdvisoryKeyRef[];
   [key: string]: unknown;
 }
 
@@ -46,6 +58,18 @@ export interface Advisory {
 
 export interface AdvisoriesResponse {
   advisories?: Advisory[];
+}
+
+/** Shape of a deps.dev advisory detail response, limited to the fields this
+ * codebase actually reads. */
+export interface AdvisoryDetails {
+  advisoryKey?: string;
+  cvss3Score?: number;
+  severity?: string;
+  title?: string;
+  overview?: string;
+  summary?: string;
+  url?: string;
 }
 
 export interface DependencyResult {

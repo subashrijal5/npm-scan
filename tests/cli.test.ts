@@ -1,5 +1,5 @@
 import { describe, test, expect } from 'bun:test';
-import { execa } from 'execa';
+import { execa, type ExecaError } from 'execa';
 import path from 'path';
 
 describe('CLI Integration', () => {
@@ -21,9 +21,12 @@ describe('CLI Integration', () => {
       await execa('node', [binPath, 'unknown-xyz-command']);
       // Should not reach here
       expect(true).toBe(false);
-    } catch (error: any) {
-      expect(error.exitCode).toBe(1);
-      expect(error.stderr || error.stdout).toContain('Unknown command: unknown-xyz-command');
+    } catch (error) {
+      const execaError = error as ExecaError;
+      expect(execaError.exitCode).toBe(1);
+      expect(execaError.stderr || execaError.stdout).toContain(
+        'Unknown command: unknown-xyz-command',
+      );
     }
   });
 

@@ -9,6 +9,7 @@ import type {
   PackageManager,
   VersionInfo,
   Advisory,
+  AdvisoryDetails,
   DependencyResult,
   ScanReport,
   ScanCacheEntry,
@@ -26,6 +27,12 @@ import {
   showHelp,
   resolveTarget,
 } from './utils';
+
+/** Minimal shape read from package.json for dependency resolution. */
+interface PackageJsonShape {
+  dependencies?: Record<string, string>;
+  devDependencies?: Record<string, string>;
+}
 
 class Scanner {
   private baseUrl: string;
@@ -145,7 +152,7 @@ class Scanner {
 
   getDependencies(packageJsonPath: string = './package.json'): DependenciesMap {
     try {
-      const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
+      const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8')) as PackageJsonShape;
       return {
         ...packageJson.dependencies,
         ...packageJson.devDependencies,
@@ -215,8 +222,8 @@ class Scanner {
     [key: string]: 'direct' | 'transitive';
   } {
     try {
-      const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
-      const directDeps = {
+      const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8')) as PackageJsonShape;
+      const directDeps: Record<string, string> = {
         ...packageJson.dependencies,
         ...packageJson.devDependencies,
       };
@@ -260,7 +267,7 @@ class Scanner {
   async getVulnerabilities(packageName: string, version: string): Promise<Advisory[]> {
     try {
       const versionInfo = await this.getVersionInfo(packageName, version);
-      const advisoryKeys = (versionInfo as any)?.advisoryKeys as Array<{ id: string }> | undefined;
+      const advisoryKeys = versionInfo?.advisoryKeys;
 
       if (!Array.isArray(advisoryKeys) || advisoryKeys.length === 0) {
         return [];
@@ -276,8 +283,7 @@ class Scanner {
           continue;
         }
 
-        const advisoryData = (await response.json()) as any;
-        const advisoryInfo = advisoryData?.advisoryKey ? advisoryData : advisoryData;
+        const advisoryInfo = (await response.json()) as AdvisoryDetails;
 
         const cvssScore = advisoryInfo.cvss3Score ?? 0;
         const normalizedSeverity =

@@ -70,18 +70,18 @@ describe('utils', () => {
       ctx.cleanup();
     });
 
-    test('throws error if local directory does not exist', async () => {
+    test('throws error if local directory does not exist', () => {
       const nonExistentPath = path.join(tmpDir, 'does-not-exist');
       expect(resolveTarget(nonExistentPath)).rejects.toThrow('Local directory does not exist');
     });
 
-    test('throws error if path is a file, not a directory', async () => {
+    test('throws error if path is a file, not a directory', () => {
       const filePath = path.join(tmpDir, 'file.txt');
       fs.writeFileSync(filePath, 'hello');
       expect(resolveTarget(filePath)).rejects.toThrow('Path is not a directory');
     });
 
-    test('throws error if directory does not contain package.json', async () => {
+    test('throws error if directory does not contain package.json', () => {
       const emptySubDir = path.join(tmpDir, 'empty-dir');
       fs.mkdirSync(emptySubDir);
       expect(resolveTarget(emptySubDir)).rejects.toThrow('No package.json found in directory');

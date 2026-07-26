@@ -1,12 +1,18 @@
 import chalk from 'chalk';
 import figlet from 'figlet';
-import inquirer from 'inquirer';
+import inquirer, { type PromptSession } from 'inquirer';
 import fs from 'fs';
 import path from 'path';
 import os from 'os';
 import { fileURLToPath } from 'url';
 import { execa } from 'execa';
-import type { DependenciesMap, PackageManager, TargetContext } from './types';
+import type {
+  DependenciesMap,
+  PackageManager,
+  TargetContext,
+  PackageLockData,
+  LegacyLockDependency,
+} from './types';
 
 type PromptCommand = 'scan' | 'all-installed' | 'generate-report' | 'help';
 
@@ -78,7 +84,9 @@ export async function resolveTarget(target?: string): Promise<TargetContext> {
         try {
           fs.rmSync(tempDir, { recursive: true, force: true });
         } catch (err) {
-          console.warn(`Warning: Could not remove temporary directory ${tempDir}: ${err}`);
+          console.warn(
+            `Warning: Could not remove temporary directory ${tempDir}: ${err instanceof Error ? err.message : String(err)}`,
+          );
         }
       },
     };
@@ -191,7 +199,9 @@ export async function promptForCommand(): Promise<{
     },
   ] as const;
 
-  const answers = await inquirer.prompt<PromptAnswers>(questions as unknown as any);
+  const answers = await inquirer.prompt<PromptAnswers>(
+    questions as unknown as PromptSession<PromptAnswers>,
+  );
 
   const flags: Record<string, string | boolean> = {};
   if (answers.target && answers.target.trim() !== '.' && answers.target.trim() !== '') {
@@ -239,13 +249,11 @@ export function detectPackageManager(projectPath: string = '.'): PackageManager 
 }
 
 export function parseNpmLockfile(lockFilePath: string): DependenciesMap {
-  const packageLock: { packages?: Record<string, any> } = JSON.parse(
-    fs.readFileSync(lockFilePath, 'utf8'),
-  );
+  const packageLock = JSON.parse(fs.readFileSync(lockFilePath, 'utf8')) as PackageLockData;
   const allPackages: DependenciesMap = {};
 
   if (packageLock.packages && Object.keys(packageLock.packages).length > 0) {
-    for (const [packagePath, packageInfo] of Object.entries(packageLock.packages || {})) {
+    for (const [packagePath, packageInfo] of Object.entries(packageLock.packages)) {
       if (packagePath === '') continue;
 
       const packageName = packagePath.replace('node_modules/', '');
@@ -261,7 +269,7 @@ export function parseNpmLockfile(lockFilePath: string): DependenciesMap {
     return allPackages;
   }
 
-  const traverseDeps = (deps: Record<string, any>) => {
+  const traverseDeps = (deps: Record<string, LegacyLockDependency>) => {
     if (!deps || typeof deps !== 'object') return;
     for (const [name, info] of Object.entries(deps)) {
       if (!info || typeof info !== 'object') continue;
@@ -274,7 +282,7 @@ export function parseNpmLockfile(lockFilePath: string): DependenciesMap {
     }
   };
 
-  traverseDeps((packageLock as any).dependencies || {});
+  traverseDeps(packageLock.dependencies || {});
   return allPackages;
 }
 
