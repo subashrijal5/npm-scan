@@ -8,6 +8,7 @@ import { fileURLToPath } from 'url';
 import { execa } from 'execa';
 import type { DependenciesMap, PackageManager, TargetContext } from './types';
 
+
 type PromptCommand = 'scan' | 'all-installed' | 'generate-report' | 'help';
 
 interface PromptAnswers {
@@ -52,22 +53,15 @@ export async function resolveTarget(target?: string): Promise<TargetContext> {
     } catch (error) {
       try {
         fs.rmSync(tempDir, { recursive: true, force: true });
-      } catch {
-        // best-effort cleanup; ignore failures removing the temp clone dir
-      }
-      throw new Error(
-        `Failed to clone GitHub repository from ${gitUrl}: ${error instanceof Error ? error.message : String(error)}`,
-        { cause: error },
-      );
+      } catch {}
+      throw new Error(`Failed to clone GitHub repository from ${gitUrl}: ${error instanceof Error ? error.message : String(error)}`);
     }
 
     const packageJsonPath = path.join(tempDir, 'package.json');
     if (!fs.existsSync(packageJsonPath)) {
       try {
         fs.rmSync(tempDir, { recursive: true, force: true });
-      } catch {
-        // best-effort cleanup; ignore failures removing the temp clone dir
-      }
+      } catch {}
       throw new Error(`No package.json found in cloned repository: ${gitUrl}`);
     }
 
@@ -80,7 +74,7 @@ export async function resolveTarget(target?: string): Promise<TargetContext> {
         } catch (err) {
           console.warn(`Warning: Could not remove temporary directory ${tempDir}: ${err}`);
         }
-      },
+      }
     };
   }
 
@@ -89,10 +83,7 @@ export async function resolveTarget(target?: string): Promise<TargetContext> {
     try {
       localPath = fileURLToPath(localPath);
     } catch (err) {
-      throw new Error(
-        `Invalid file URL '${targetStr}': ${err instanceof Error ? err.message : String(err)}`,
-        { cause: err },
-      );
+      throw new Error(`Invalid file URL '${targetStr}': ${err instanceof Error ? err.message : String(err)}`);
     }
   } else if (localPath.startsWith('~')) {
     localPath = path.join(os.homedir(), localPath.slice(1));
@@ -117,7 +108,7 @@ export async function resolveTarget(target?: string): Promise<TargetContext> {
   return {
     projectPath: resolvedPath,
     isTemporary: false,
-    cleanup: () => {},
+    cleanup: () => {}
   };
 }
 
@@ -127,10 +118,7 @@ export function renderBanner(): void {
   console.log(chalk.gray('Interactive dependency security scanner\n'));
 }
 
-export async function promptForCommand(): Promise<{
-  command: string;
-  flags: Record<string, string | boolean>;
-}> {
+export async function promptForCommand(): Promise<{ command: string; flags: Record<string, string | boolean> }> {
   const questions = [
     {
       type: 'select' as const,
@@ -139,34 +127,30 @@ export async function promptForCommand(): Promise<{
       choices: [
         { name: 'Scan dependencies', value: 'scan' as PromptCommand },
         { name: 'List all installed packages and report', value: 'all-installed' as PromptCommand },
-        {
-          name: 'Generate report for vulnerable packages',
-          value: 'generate-report' as PromptCommand,
-        },
-        { name: 'Show help', value: 'help' as PromptCommand },
-      ],
+        { name: 'Generate report for vulnerable packages', value: 'generate-report' as PromptCommand },
+        { name: 'Show help', value: 'help' as PromptCommand }
+      ]
     },
     {
       type: 'input' as const,
       name: 'target' as const,
-      message:
-        'Enter GitHub repository URL or local project directory path (leave empty for current directory):',
+      message: 'Enter GitHub repository URL or local project directory path (leave empty for current directory):',
       default: '.',
-      when: (answers: PromptAnswers) => answers.command !== 'help',
+      when: (answers: PromptAnswers) => answers.command !== 'help'
     },
     {
       type: 'confirm' as const,
       name: 'clearCache' as const,
       message: 'Clear previous cache before scanning?',
       default: false,
-      when: (answers: PromptAnswers) => answers.command !== 'help',
+      when: (answers: PromptAnswers) => answers.command !== 'help'
     },
     {
       type: 'confirm' as const,
       name: 'directOnly' as const,
       message: 'Scan direct dependencies only?',
       default: false,
-      when: (answers: PromptAnswers) => answers.command === 'scan',
+      when: (answers: PromptAnswers) => answers.command === 'scan'
     },
     {
       type: 'confirm' as const,
@@ -176,7 +160,7 @@ export async function promptForCommand(): Promise<{
           ? 'Save a full installed package report to disk?'
           : 'Save the report to disk?',
       default: false,
-      when: (answers: PromptAnswers) => answers.command !== 'help',
+      when: (answers: PromptAnswers) => answers.command !== 'help'
     },
     {
       type: 'input' as const,
@@ -186,9 +170,11 @@ export async function promptForCommand(): Promise<{
           ? 'Enter filename for the installed package report'
           : 'Enter filename for the report',
       default: (answers: PromptAnswers) =>
-        answers.command === 'all-installed' ? 'all-installed-report.json' : 'security-scan.json',
-      when: (answers: PromptAnswers) => answers.saveReport === true,
-    },
+        answers.command === 'all-installed'
+          ? 'all-installed-report.json'
+          : 'security-scan.json',
+      when: (answers: PromptAnswers) => answers.saveReport === true
+    }
   ] as const;
 
   const answers = await inquirer.prompt<PromptAnswers>(questions as unknown as any);
@@ -199,10 +185,7 @@ export async function promptForCommand(): Promise<{
   }
   if (answers.clearCache) flags['clear-cache'] = true;
   if (answers.directOnly) flags['direct-only'] = true;
-  if (answers.saveReport)
-    flags.save =
-      answers.saveFile ||
-      (answers.command === 'all-installed' ? 'all-installed-report.json' : 'security-scan.json');
+  if (answers.saveReport) flags.save = answers.saveFile || (answers.command === 'all-installed' ? 'all-installed-report.json' : 'security-scan.json');
 
   return { command: answers.command, flags };
 }
@@ -213,8 +196,8 @@ export async function confirmSave(filename: string): Promise<boolean> {
       type: 'confirm',
       name: 'confirmSave',
       message: `Confirm save report as ${filename}?`,
-      default: true,
-    },
+      default: true
+    }
   ]);
 
   return Boolean(answer.confirmSave);
@@ -225,7 +208,7 @@ export function detectPackageManager(projectPath: string = '.'): PackageManager 
     npm: 'package-lock.json',
     yarn: 'yarn.lock',
     pnpm: 'pnpm-lock.yaml',
-    bun: 'bun.lockb',
+    bun: 'bun.lockb'
   };
 
   for (const [manager, lockFile] of Object.entries(lockFiles)) {
@@ -239,9 +222,7 @@ export function detectPackageManager(projectPath: string = '.'): PackageManager 
 }
 
 export function parseNpmLockfile(lockFilePath: string): DependenciesMap {
-  const packageLock: { packages?: Record<string, any> } = JSON.parse(
-    fs.readFileSync(lockFilePath, 'utf8'),
-  );
+  const packageLock: { packages?: Record<string, any> } = JSON.parse(fs.readFileSync(lockFilePath, 'utf8'));
   const allPackages: DependenciesMap = {};
 
   if (packageLock.packages && Object.keys(packageLock.packages).length > 0) {
@@ -249,10 +230,9 @@ export function parseNpmLockfile(lockFilePath: string): DependenciesMap {
       if (packagePath === '') continue;
 
       const packageName = packagePath.replace('node_modules/', '');
-      const normalizedName =
-        packageName.includes('/') && !packageName.startsWith('@')
-          ? packageName.split('/').pop()
-          : packageName;
+      const normalizedName = packageName.includes('/') && !packageName.startsWith('@')
+        ? packageName.split('/').pop()
+        : packageName;
 
       if (packageInfo.version && normalizedName) {
         allPackages[normalizedName] = packageInfo.version;
@@ -289,9 +269,9 @@ export function parsePnpmLockfile(lockFilePath: string): DependenciesMap {
     }
 
     const packagesSection = packagesMatch[1];
-    const packageLines = packagesSection.match(/^ {2}\/[^\n]+/gm) || [];
+    const packageLines = packagesSection.match(/^  \/[^\n]+/gm) || [];
 
-    packageLines.forEach((line) => {
+    packageLines.forEach(line => {
       const match = line.match(/\/([^@]+)@([^:]+):/);
       if (match?.[1] && match?.[2]) {
         const packageName = match[1];
@@ -302,9 +282,7 @@ export function parsePnpmLockfile(lockFilePath: string): DependenciesMap {
 
     return allPackages;
   } catch (error) {
-    console.warn(
-      `Warning: Could not parse pnpm-lock.yaml: ${error instanceof Error ? error.message : String(error)}`,
-    );
+    console.warn(`Warning: Could not parse pnpm-lock.yaml: ${error instanceof Error ? error.message : String(error)}`);
     return {};
   }
 }
@@ -325,7 +303,7 @@ export function parseYarnLockfile(lockFilePath: string): DependenciesMap {
       }
 
       if (line.startsWith('"') && line.includes('@')) {
-        const match = line.match(/"([^"@]+)@([^"]+)":/);
+        const match = line.match(/"([^"@]+)@([^\"]+)":/);
         if (match?.[1] && match?.[2]) {
           const packageName = match[1];
           let resolvedVersion = match[2];
@@ -336,7 +314,7 @@ export function parseYarnLockfile(lockFilePath: string): DependenciesMap {
             if (!nextLine || nextLine.startsWith('"')) {
               break;
             }
-            const versionMatch = nextLine.match(/version\s+"([^"]+)"/);
+            const versionMatch = nextLine.match(/version\s+"([^\"]+)"/);
             if (versionMatch?.[1]) {
               resolvedVersion = versionMatch[1];
               break;
@@ -352,24 +330,17 @@ export function parseYarnLockfile(lockFilePath: string): DependenciesMap {
 
     return allPackages;
   } catch (error) {
-    console.warn(
-      `Warning: Could not parse yarn.lock: ${error instanceof Error ? error.message : String(error)}`,
-    );
+    console.warn(`Warning: Could not parse yarn.lock: ${error instanceof Error ? error.message : String(error)}`);
     return {};
   }
 }
 
 export function parseBunLockfile(_lockFilePath: string): DependenciesMap {
-  console.warn(
-    'Warning: bun.lockb parsing requires additional dependencies. Falling back to package.json only.',
-  );
+  console.warn('Warning: bun.lockb parsing requires additional dependencies. Falling back to package.json only.');
   return {};
 }
 
-export function parseCliArgs(argv: string[]): {
-  command: string;
-  flags: Record<string, string | boolean>;
-} {
+export function parseCliArgs(argv: string[]): { command: string; flags: Record<string, string | boolean> } {
   const args = [...argv];
   const flags: Record<string, string | boolean> = {};
   let command = 'scan';
@@ -438,31 +409,22 @@ export function parseCliArgs(argv: string[]): {
 export function showHelp(): void {
   console.log('Usage: npm-scan [command] [options] [url|path]\n');
   console.log('Commands:');
-  console.log(
-    '  scan [--url <url|path>] [--direct-only|--full] [--clear-cache] [--cache-file <path>]',
-  );
+  console.log('  scan [--url <url|path>] [--direct-only|--full] [--clear-cache] [--cache-file <path>]');
   console.log('                                   Scan dependencies for a project');
   console.log('  all-installed [--url <url|path>] List all installed packages');
   console.log('  generate-report [--url <url|path>] [--save [file]] [--clear-cache]');
-  console.log(
-    '                                   Scan and generate a report for vulnerable packages',
-  );
+  console.log('                                   Scan and generate a report for vulnerable packages');
   console.log('  help                             Show help');
   console.log('\nOptions:');
-  console.log(
-    '  --url, -u <url|path>                GitHub repo URL or local project directory path',
-  );
+  console.log('  --url, -u <url|path>                GitHub repo URL or local project directory path');
   console.log('  --path, -p <path>                   Local project directory path or file URL');
   console.log('  --clear-cache, --invalidate-cache   Clear previous cached scan results');
-  console.log(
-    '  --cache-file <path>                 Use a custom cache file instead of .npm-scan-cache.json',
-  );
+  console.log('  --cache-file <path>                 Use a custom cache file instead of .npm-scan-cache.json');
   console.log('\nExamples:');
   console.log('  npm-scan scan --url https://github.com/expressjs/express');
   console.log('  npm-scan scan --url /path/to/project');
   console.log('  npm-scan scan --url file:///path/to/project');
   console.log('  npm-scan scan --direct-only');
-  console.log(
-    '  npm-scan generate-report --url https://github.com/facebook/react --save report.json',
-  );
+  console.log('  npm-scan generate-report --url https://github.com/facebook/react --save report.json');
 }
+
