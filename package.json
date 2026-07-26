@@ -4,11 +4,21 @@
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
-  "entry point": "src/index.ts",
   "bin": {
     "npm-scan": "./bin/npm-scan.js"
   },
   "files": ["dist", "bin"],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ankur700/npm-scan.git"
+  },
+  "bugs": {
+    "url": "https://github.com/ankur700/npm-scan/issues"
+  },
+  "homepage": "https://github.com/ankur700/npm-scan#readme",
+  "engines": {
+    "node": ">=18"
+  },
   "scripts": {
       "build": "bun build ./src/index.ts --outdir ./dist --target node",
       "scan": "node ./bin/npm-scan.js",
@@ -24,6 +34,7 @@
     "security"
   ],
   "author": "Ankur Singh",
+  "contributors": ["Subash Rijal"],
   "license": "GPL-3.0-only",
   "dependencies": {
     "chalk": "^5.6.2",
